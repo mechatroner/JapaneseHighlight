@@ -12,13 +12,14 @@ module.exports = {
         black_white: './scripts/black_white.js',
         content_script: './scripts/content_script.js',
         import: './scripts/import.js',
+        options: './scripts/options.js',
         popup: './scripts/popup.js',
     },
     output: {
         filename: './scripts/[name].js',
         path: path.resolve(__dirname, 'dist-chrome'),
     },
-    devtool: 'source-map',
+    // devtool: 'source-map',
     // optimization: {
     //     minimize: true,
     //     minimizer: [new TerserPlugin()],

@@ -136,6 +136,7 @@ function display_percents(show_percents) {
 }
 
 function init_controls() {
+    console.log('my popup')
     window.onload = () => {
         document.getElementById("addToList").addEventListener("click", process_checkbox);
         document.getElementById("adjust").addEventListener("click", process_adjust);

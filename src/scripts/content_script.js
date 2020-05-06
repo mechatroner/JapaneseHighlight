@@ -1,31 +1,29 @@
 // import browser from 'webextension-polyfill'
-// import kuromoji from 'kuromoji'
 import { make_id_suffix, make_hl_style, add_lexeme } from './common_lib'
 import { get_dict_definition_url } from './context_menu_lib'
 
 let dict_words = null;
 let dict_idioms = null;
 
-var min_show_rank = null;
-var word_max_rank = null;
-var user_vocabulary = null;
-var is_enabled = null;
-var wd_hl_settings = null;
-var wd_hover_settings = null;
-var wd_online_dicts = null;
-var wd_enable_tts = null;
+let min_show_rank = null;
+let word_max_rank = null;
+let user_vocabulary = null;
+let is_enabled = null;
+let wd_hl_settings = null;
+let wd_hover_settings = null;
+let wd_online_dicts = null;
+let wd_enable_tts = null;
 
-var disable_by_keypress = false;
+let disable_by_keypress = false;
 
+let current_lexeme = "";
+let cur_wd_node_id = 1;
 
-var current_lexeme = "";
-var cur_wd_node_id = 1;
+const word_re = new RegExp("^[a-z][a-z]*$");
 
-var word_re = new RegExp("^[a-z][a-z]*$");
-
-var function_key_is_pressed = false;
-var rendered_node_id = null;
-var node_to_render_id = null;
+let function_key_is_pressed = false;
+let rendered_node_id = null;
+let node_to_render_id = null;
 
 function make_class_name(lemma) {
     if (lemma) {
@@ -34,6 +32,7 @@ function make_class_name(lemma) {
     return 'wdautohl_none_none';
 }
 
+// TODO: 
 function get_rare_lemma(word) {
     if (word.length < 3)
         return undefined;
@@ -48,7 +47,7 @@ function get_rare_lemma(word) {
     return (!user_vocabulary || !(Object.prototype.hasOwnProperty.call(user_vocabulary, lemma))) ? lemma : undefined;
 }
 
-
+// TODO:
 function get_word_percentile(word) {
     if (!Object.prototype.hasOwnProperty.call(dict_words, word))
         return undefined;
@@ -157,7 +156,7 @@ function processMouse(e) {
     }, 200);
 }
 
-
+// TODO:
 function text_to_hl_nodes(text, dst) {
     var lc_text = text.toLowerCase();
     let ws_text = lc_text.replace(/[,;()?!`:"'.\s\-\u2013\u2014\u201C\u201D\u2019]/g, " ");
@@ -169,7 +168,6 @@ function text_to_hl_nodes(text, dst) {
     var num_nonempty = 0;
     var ibegin = 0; //beginning of word
     var wnum = 0; //word number
-
 
 
     var matches = [];
@@ -276,7 +274,6 @@ function text_to_hl_nodes(text, dst) {
     }
 
     return insert_count;
-
 }
 
 const good_tags_list = ["P", "H1", "H2", "H3", "H4", "H5", "H6", "B", "SMALL", "STRONG", "Q", "DIV", "SPAN"];
@@ -286,7 +283,6 @@ const mygoodfilter = (node) => {
         return NodeFilter.FILTER_ACCEPT;
     return NodeFilter.FILTER_SKIP;
 }
-
 
 function textNodesUnder(el) {
     var n, a = [], walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, mygoodfilter, false);
@@ -334,10 +330,10 @@ function doHighlightText(textNodes) {
 }
 
 function onNodeInserted(event) {
-    var inobj = event.target;
+    const inobj = event.target;
     if (!inobj)
         return;
-    var classattr = null;
+    let classattr = null;
     if (typeof inobj.getAttribute !== 'function') {
         return;
     }
@@ -347,7 +343,7 @@ function onNodeInserted(event) {
         return;
     }
     if (!classattr || !classattr.startsWith("wdautohl_")) {
-        var textNodes = textNodesUnder(inobj);
+        const textNodes = textNodesUnder(inobj);
         doHighlightText(textNodes);
     }
 }
@@ -446,19 +442,10 @@ function create_bubble() {
     return bubbleDOM;
 }
 
+// TODO:
 function initForPage() {
     if (!document.body)
         return;
-
-    // const dicPath = browser.runtime.getURL("../dict");
-    // kuromoji.builder({ dicPath }).build((err, tokenizer) => {
-    //     if (err) {
-    //         console.log(err)
-    //     } else {
-    //         const tokens = tokenizer.tokenize("すもももももももものうち")
-    //         console.log(tokens)
-    //     }
-    // });
 
     chrome.runtime.onMessage.addListener((request) => {
         if (request.wdm_unhighlight) {
@@ -481,6 +468,12 @@ function initForPage() {
         is_enabled = result.wd_is_enabled;
         var black_list = result.wd_black_list;
         var white_list = result.wd_white_list;
+        if (!dict_words) {
+            alert('no words')
+        } else {
+            console.log('dict_words', dict_words)
+            console.log('dict_words_a', dict_words['a'])
+        }
 
         //TODO simultaneously send page language request here
         chrome.runtime.sendMessage({ wdm_request: "hostname" }, response => {
@@ -536,4 +529,3 @@ function initForPage() {
 document.addEventListener("DOMContentLoaded", () => {
     initForPage();
 });
-

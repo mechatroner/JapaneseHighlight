@@ -1,5 +1,7 @@
 import { saveAs } from './Filesaver'
-import { make_hl_style, localizeHtmlPage } from './common_lib'
+import { make_hl_style, 
+    localizeHtmlPage
+} from './common_lib'
 import { initContextMenus, make_default_online_dicts } from './context_menu_lib'
 
 var wd_hl_settings = null;
