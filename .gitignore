@@ -14,5 +14,7 @@ package-lock.json
 
 *.log
 
-src/data/eng_dict.txt
-src/data/eng_idioms.txt
+/src/data/*
+/src/scripts/lib/mecab.js
+
+/mecab*

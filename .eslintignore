@@ -3,3 +3,5 @@
 
 # production
 /dist-chrome
+
+src/scripts/lib/mecab.js

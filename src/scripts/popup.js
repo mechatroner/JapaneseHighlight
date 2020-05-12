@@ -1,6 +1,6 @@
-import { request_unhighlight, add_lexeme, localizeHtmlPage } from './common_lib'
+import { request_unhighlight, add_lexeme, localizeHtmlPage } from './lib/common_lib'
 
-var dict_size = null;
+// var dict_size = null;
 var enabled_mode = true;
 
 function display_mode() {
@@ -12,16 +12,16 @@ function display_mode() {
             document.getElementById("modeHeader").textContent = chrome.i18n.getMessage("enabledDescription");
             document.getElementById("addToListLabel").textContent = chrome.i18n.getMessage("addSkippedLabel");
             document.getElementById("addToListLabel").href = chrome.extension.getURL('../html/black_list.html');
-            chrome.storage.local.get(["wd_black_list",], result => {
-                var black_list = result.wd_black_list;
+            chrome.storage.local.get(["jhBlackList",], result => {
+                var black_list = result.jhBlackList;
                 document.getElementById("addToList").checked = Object.prototype.hasOwnProperty.call(black_list, domain);
             });
         } else {
             document.getElementById("modeHeader").textContent = chrome.i18n.getMessage("disabledDescription");
             document.getElementById("addToListLabel").textContent = chrome.i18n.getMessage("addFavoritesLabel");
             document.getElementById("addToListLabel").href = chrome.extension.getURL('../html/white_list.html');
-            chrome.storage.local.get(["wd_white_list",], result => {
-                var white_list = result.wd_white_list;
+            chrome.storage.local.get(["jhWhiteList",], result => {
+                var white_list = result.jhWhiteList;
                 document.getElementById("addToList").checked = Object.prototype.hasOwnProperty.call(white_list, domain);
             });
         }
@@ -34,7 +34,7 @@ function process_checkbox() {
         var url = new URL(tab.url);
         var domain = url.hostname;
         document.getElementById("addHostName").textContent = domain;
-        var list_name = enabled_mode ? "wd_black_list" : "wd_white_list";
+        var list_name = enabled_mode ? "jhBlackList" : "jhWhiteList";
         chrome.storage.local.get([list_name], result => {
             var site_list = result[list_name];
             if (checkboxElem.checked) {
@@ -52,7 +52,7 @@ function process_checkbox() {
 
 function process_mode_switch() {
     enabled_mode = !enabled_mode;
-    chrome.storage.local.set({ "wd_is_enabled": enabled_mode });
+    chrome.storage.local.set({ "jhIsEnabled": enabled_mode });
     display_mode();
 }
 
@@ -69,9 +69,9 @@ function process_adjust() {
 }
 
 function display_vocabulary_size() {
-    chrome.storage.local.get(['wd_user_vocabulary'], result => {
-        var wd_user_vocabulary = result.wd_user_vocabulary;
-        var vocab_size = Object.keys(wd_user_vocabulary).length;
+    chrome.storage.local.get(['jhUserVocabulary'], result => {
+        var jhUserVocabulary = result.jhUserVocabulary;
+        var vocab_size = Object.keys(jhUserVocabulary).length;
         document.getElementById("vocabIndicator").textContent = vocab_size;
     });
 }
@@ -106,47 +106,47 @@ function process_add_word() {
 }
 
 function process_rate(increase) {
-    chrome.storage.local.get(['wd_show_percents'], result => {
-        var show_percents = result.wd_show_percents;
-        show_percents += increase;
-        show_percents = Math.min(100, Math.max(0, show_percents));
-        display_percents(show_percents);
-        chrome.storage.local.set({ "wd_show_percents": show_percents });
+    chrome.storage.local.get(['jhMinimunRank'], result => {
+        let minimunRank = result.jhMinimunRank + increase;
+        // minimunRank += increase;
+        // minimunRank = Math.min(100, Math.max(0, show_percents));
+        // display_percents(minimunRank);
+        document.getElementById("countIndicator").textContent = minimunRank;
+        chrome.storage.local.set({ "jhMinimunRank": minimunRank });
     });
 }
 
-function process_rate_m1() {
-    process_rate(-1);
+function process_rate_m100() {
+    process_rate(-100);
 }
-function process_rate_m10() {
-    process_rate(-10);
+function process_rate_m1000() {
+    process_rate(-1000);
 }
-function process_rate_p1() {
-    process_rate(1);
+function process_rate_p100() {
+    process_rate(100);
 }
-function process_rate_p10() {
-    process_rate(10);
+function process_rate_p1000() {
+    process_rate(1000);
 }
 
-function display_percents(show_percents) {
-    var not_showing_cnt = Math.floor((dict_size / 100.0) * show_percents);
-    document.getElementById("rateIndicator1").textContent = show_percents + "%";
-    document.getElementById("rateIndicator2").textContent = show_percents + "%";
-    document.getElementById("countIndicator").textContent = not_showing_cnt;
-}
+// function display_percents(show_percents) {
+//     var not_showing_cnt = Math.floor((dict_size / 100.0) * show_percents);
+//     document.getElementById("rateIndicator1").textContent = show_percents + "%";
+//     document.getElementById("rateIndicator2").textContent = show_percents + "%";
+//     document.getElementById("countIndicator").textContent = not_showing_cnt;
+// }
 
 function init_controls() {
-    console.log('my popup')
     window.onload = () => {
         document.getElementById("addToList").addEventListener("click", process_checkbox);
         document.getElementById("adjust").addEventListener("click", process_adjust);
         document.getElementById("showVocab").addEventListener("click", process_show);
         document.getElementById("getHelp").addEventListener("click", process_help);
         document.getElementById("addWord").addEventListener("click", process_add_word);
-        document.getElementById("rateM10").addEventListener("click", process_rate_m10);
-        document.getElementById("rateM1").addEventListener("click", process_rate_m1);
-        document.getElementById("rateP1").addEventListener("click", process_rate_p1);
-        document.getElementById("rateP10").addEventListener("click", process_rate_p10);
+        document.getElementById("rankM1000").addEventListener("click", process_rate_m1000);
+        document.getElementById("rankM100").addEventListener("click", process_rate_m100);
+        document.getElementById("rankP100").addEventListener("click", process_rate_p100);
+        document.getElementById("rankP1000").addEventListener("click", process_rate_p1000);
         document.getElementById("changeMode").addEventListener("click", process_mode_switch);
 
         document.getElementById("addText").addEventListener("keyup", event => {
@@ -158,11 +158,12 @@ function init_controls() {
 
         display_vocabulary_size();
 
-        chrome.storage.local.get(['wd_show_percents', 'wd_is_enabled', 'wd_word_max_rank'], result => {
-            var show_percents = result.wd_show_percents;
-            enabled_mode = result.wd_is_enabled;
-            dict_size = result.wd_word_max_rank;
-            display_percents(show_percents);
+        chrome.storage.local.get(['jhMinimunRank', 'jhIsEnabled'], result => {
+            // var show_percents = result.wd_show_percents;
+            enabled_mode = result.jhIsEnabled;
+            // dict_size = result.wd_word_max_rank;
+            document.getElementById("countIndicator").textContent = result.jhMinimunRank;
+            // display_percents(show_percents);
             display_mode();
         });
     }

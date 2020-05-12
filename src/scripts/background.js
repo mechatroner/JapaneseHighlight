@@ -1,125 +1,12 @@
-// import kuromoji from 'kuromoji'
 // import browser from "webextension-polyfill";
-import { initContextMenus, make_default_online_dicts } from './context_menu_lib'
+import { initContextMenus, make_default_online_dicts } from './lib/context_menu_lib'
 
 var gapi_loaded = false;
 var gapi_inited = false;
 let gapi = window.gapi;
 
-// const readFile = (_path) => {
-//     return new Promise((resolve, reject) => {
-//         fetch(_path, { mode: 'same-origin' })
-//             .then((_res) => {
-//                 return _res.blob();
-//             })
-//             .then((_blob) => {
-//                 const reader = new FileReader();
-
-//                 reader.addEventListener("loadend", function () {
-//                     resolve(this.result);
-//                 });
-
-//                 reader.readAsText(_blob);
-//             })
-//             .catch(error => {
-//                 reject(error);
-//             });
-//     });
-// };
-
-// function processData(allText) {
-//     const allTextLines = allText.split(/\r\n|\n/);
-//     const headers = allTextLines[0].split(',');
-//     const lines = [];
-
-//     for (let i = 1; i < allTextLines.length; i++) {
-//         const data = allTextLines[i].split(',');
-//         if (data.length == headers.length) {
-
-//             const tarr = [];
-//             for (let j = 0; j < headers.length; j++) {
-//                 // tarr.push(headers[j] + ":" + data[j]);
-//                 const myObj = new Object();
-//                 myObj[headers[j]] = data[j];
-//                 tarr.push(myObj);
-//             }
-//             lines.push(tarr);
-//         }
-//     }
-//     return lines
-//     // alert(lines);
-// }
-
-//TODO check chrome.runtime.lastError for all storage.local operations
-function do_load_dictionary(file_text) {
-    var lines = file_text.split('\n');
-    var dict_words = {};
-    var rank = 0;
-    var prev_lemma = null;
-    for (var i = 0; i < lines.length; ++i) {
-        var fields = lines[i].split('\t');
-        if (i + 1 === lines.length && fields.length == 1)
-            break;
-        // var form = fields[0];
-        var lemma = fields[1];
-        if (lemma !== prev_lemma) {
-            rank += 1;
-            prev_lemma = lemma;
-        }
-        dict_words[fields[0]] = [fields[1], rank];
-    }
-    const local_storage = chrome.storage.local;
-    local_storage.set({ "words_discoverer_eng_dict": dict_words });
-    local_storage.set({ "wd_word_max_rank": rank });
-}
-
-function load_eng_dictionary() {
-    var file_path = chrome.runtime.getURL("../data/eng_dict.txt");
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = () => {
-        if (xhr.readyState == XMLHttpRequest.DONE) {
-            do_load_dictionary(xhr.responseText);
-        }
-    }
-    xhr.open('GET', file_path, true);
-    xhr.send(null);
-}
-
-function do_load_idioms(file_text) {
-    var lines = file_text.split('\n');
-    var rare_words = {};
-    for (var lno = 0; lno < lines.length; ++lno) {
-        var fields = lines[lno].split('\t');
-        if (lno + 1 === lines.length && fields.length == 1)
-            break;
-        var words = fields[0].split(' ');
-        for (var i = 0; i + 1 < words.length; ++i) {
-            const key = words.slice(0, i + 1).join(' ');
-            rare_words[key] = -1;
-        }
-        const key = fields[0];
-        rare_words[key] = fields[1];
-    }
-    const local_storage = chrome.storage.local;
-    local_storage.set({ "wd_idioms": rare_words });
-}
-
-
-function load_idioms() {
-    const file_path = chrome.extension.getURL("../data/eng_idioms.txt");
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = () => {
-        if (xhr.readyState == XMLHttpRequest.DONE) {
-            do_load_idioms(xhr.responseText);
-        }
-    }
-    xhr.open('GET', file_path, true);
-    xhr.send(null);
-}
-
-
 function report_sync_failure(error_msg) {
-    chrome.storage.local.set({ "wd_last_sync_error": error_msg }, () => {
+    chrome.storage.local.set({ "jhLastSyncError": error_msg }, () => {
         chrome.runtime.sendMessage({ 'sync_feedback': 1 });
     });
 }
@@ -303,11 +190,11 @@ function apply_cloud_vocab(entries) {
     var sync_date = new Date();
     var sync_time = sync_date.getTime();
     var new_state = {
-        "wd_last_sync_error": null,
-        "wd_user_vocabulary": entries,
+        "jhLastSyncError": null,
+        "jhUserVocabulary": entries,
         "wd_user_vocab_added": {},
         "wd_user_vocab_deleted": {},
-        "wd_last_sync": sync_time
+        "jhLastSync": sync_time
     };
     chrome.storage.local.set(new_state, () => {
         chrome.runtime.sendMessage({ 'sync_feedback': 1 });
@@ -386,22 +273,22 @@ function perform_full_sync(vocab) {
 
 
 function sync_user_vocabularies() {
-    chrome.storage.local.get(['wd_user_vocabulary', 'wd_user_vocab_added', 'wd_user_vocab_deleted'], result => {
-        var wd_user_vocabulary = result.wd_user_vocabulary;
+    chrome.storage.local.get(['jhUserVocabulary', 'wd_user_vocab_added', 'wd_user_vocab_deleted'], result => {
+        var jhUserVocabulary = result.jhUserVocabulary;
         var wd_user_vocab_added = result.wd_user_vocab_added;
         var wd_user_vocab_deleted = result.wd_user_vocab_deleted;
-        if (typeof wd_user_vocabulary === 'undefined') {
-            wd_user_vocabulary = {};
+        if (typeof jhUserVocabulary === 'undefined') {
+            jhUserVocabulary = {};
         }
         if (typeof wd_user_vocab_added === 'undefined') {
-            wd_user_vocab_added = Object.assign({}, wd_user_vocabulary);
+            wd_user_vocab_added = Object.assign({}, jhUserVocabulary);
         }
         if (typeof wd_user_vocab_deleted === 'undefined') {
             wd_user_vocab_deleted = {};
         }
         var vocab = {
             "name": "my_vocabulary",
-            "all": wd_user_vocabulary,
+            "all": jhUserVocabulary,
             "added": wd_user_vocab_added,
             "deleted": wd_user_vocab_deleted
         };
@@ -435,7 +322,7 @@ function load_and_init_gapi(interactive_authorization) {
 
 
 function start_sync_sequence(interactive_authorization) {
-    chrome.storage.local.set({ "wd_last_sync_error": 'Unknown sync problem' }, () => {
+    chrome.storage.local.set({ "jhLastSyncError": 'Unknown sync problem' }, () => {
         if (!gapi_loaded) {
             load_and_init_gapi(interactive_authorization);
         } else if (!gapi_inited) {
@@ -448,18 +335,19 @@ function start_sync_sequence(interactive_authorization) {
 
 
 function initialize_extension() {
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-        if (request.wdm_request == "hostname") {
-            const tab_url = sender.tab.url;
-            var url = new URL(tab_url);
-            var domain = url.hostname;
-            sendResponse({ wdm_hostname: domain });
-        } else if (request.wdm_verdict) {
+    chrome.runtime.onMessage.addListener((request, sender) => {
+        // if (request.wdm_request == "hostname") {
+        // const tab_url = sender.tab.url;
+        // var url = new URL(tab_url);
+        // var domain = url.hostname;
+        // sendResponse({ wdm_hostname: domain });
+        // } else 
+        if (request.wdm_verdict) {
             if (request.wdm_verdict == "highlight") {
-                chrome.storage.local.get(['wd_gd_sync_enabled', 'wd_last_sync_error'], result => {
+                chrome.storage.local.get(['jhGdSyncEnabled', 'jhLastSyncError'], result => {
                     chrome.browserAction.setIcon({ path: "../images/result48.png", tabId: sender.tab.id }, () => {
-                        if (result.wd_gd_sync_enabled) {
-                            if (result.wd_last_sync_error == null) {
+                        if (result.jhGdSyncEnabled) {
+                            if (result.jhLastSyncError == null) {
                                 chrome.browserAction.setBadgeText({ text: 'sync', tabId: sender.tab.id });
                                 chrome.browserAction.setBadgeBackgroundColor({
                                     color: [25, 137, 0, 255],
@@ -488,28 +376,15 @@ function initialize_extension() {
         }
     });
 
-    chrome.storage.local.get(['words_discoverer_eng_dict', 'wd_hl_settings', 'wd_online_dicts', 'wd_hover_settings', 'wd_idioms', 'wd_show_percents', 'wd_is_enabled', 'wd_user_vocabulary', 'wd_black_list', 'wd_white_list', 'wd_gd_sync_enabled', 'wd_enable_tts', 'wd_tokenizer', 'wd_jpn_dict'], result => {
-        load_eng_dictionary();
-        load_idioms();
+    chrome.storage.local.get(['jhHlSettings', 'jhOnlineDicts', 'jhHoverSettings', 'jhIsEnabled', 'jhUserVocabulary', 'jhBlackList', 'jhWhiteList', 'jhGdSyncEnabled', 'jhEnableTTS', 'jhJpnDict', 'jhMinimunRank'], result => {
+        // load_eng_dictionary();
+        // load_idioms();
+        if (typeof result.jhMinimunRank === 'undefined') {
+            chrome.storage.local.set({ "jhMinimunRank": 6000 });
+        }
 
-        // const dicPath = chrome.runtime.getURL("../dict");
-        // kuromoji.builder({ dicPath }).build((err, tokenizer) => {
-        //     if (err) {
-        //         console.log(err)
-        //     } else {
-        //         chrome.storage.local.set({ "wd_tokenizer": tokenizer });
-        //     }
-        // });
-
-        // const bccjw = chrome.runtime.getURL("../data/mybccjw.csv");
-        // readFile(bccjw).then((text) => {
-        //     const jpn_dict = processData(text)
-        //     // console.log(jpn_dict[1])
-        //     chrome.storage.local.set({ "wd_jpn_dict": jpn_dict });
-        // })
-
-        const wd_hl_settings = result.wd_hl_settings;
-        if (typeof wd_hl_settings == 'undefined') {
+        const jhHlSettings = result.jhHlSettings;
+        if (typeof jhHlSettings == 'undefined') {
             const word_hl_params = {
                 enabled: true,
                 quoted: false,
@@ -528,56 +403,51 @@ function initialize_extension() {
                 useColor: true,
                 color: "blue"
             };
-            const wd_hl_settings = {
+            const jhHlSettings = {
                 wordParams: word_hl_params,
                 idiomParams: idiom_hl_params,
             };
-            chrome.storage.local.set({ "wd_hl_settings": wd_hl_settings });
+            chrome.storage.local.set({ "jhHlSettings": jhHlSettings });
         }
-        const wd_enable_tts = result.wd_enable_tts;
-        if (typeof wd_enable_tts == 'undefined') {
-            chrome.storage.local.set({ "wd_enable_tts": false });
+        const jhEnableTTS = result.jhEnableTTS;
+        if (typeof jhEnableTTS == 'undefined') {
+            chrome.storage.local.set({ "jhEnableTTS": false });
         }
-        const wd_hover_settings = result.wd_hover_settings;
-        if (typeof wd_hover_settings == 'undefined') {
-            const wd_hover_settings = { hl_hover: 'always', ow_hover: 'never' };
-            chrome.storage.local.set({ "wd_hover_settings": wd_hover_settings });
+        const jhHoverSettings = result.jhHoverSettings;
+        if (typeof jhHoverSettings == 'undefined') {
+            const jhHoverSettings = { hl_hover: 'always', ow_hover: 'never' };
+            chrome.storage.local.set({ "jhHoverSettings": jhHoverSettings });
         }
-        var wd_online_dicts = result.wd_online_dicts;
-        if (typeof wd_online_dicts == 'undefined') {
-            const wd_online_dicts = make_default_online_dicts();
-            console.log('online_dict', wd_online_dicts)
-            chrome.storage.local.set({ "wd_online_dicts": wd_online_dicts });
+        var jhOnlineDicts = result.jhOnlineDicts;
+        if (typeof jhOnlineDicts == 'undefined') {
+            const jhOnlineDicts = make_default_online_dicts();
+            chrome.storage.local.set({ "jhOnlineDicts": jhOnlineDicts });
         }
-        initContextMenus(wd_online_dicts);
+        initContextMenus(jhOnlineDicts);
 
-        const show_percents = result.wd_show_percents;
-        if (typeof show_percents === 'undefined') {
-            chrome.storage.local.set({ "wd_show_percents": 15 });
+        const jhIsEnabled = result.jhIsEnabled;
+        if (typeof jhIsEnabled === 'undefined') {
+            chrome.storage.local.set({ "jhIsEnabled": true });
         }
-        const wd_is_enabled = result.wd_is_enabled;
-        if (typeof wd_is_enabled === 'undefined') {
-            chrome.storage.local.set({ "wd_is_enabled": true });
-        }
-        const user_vocabulary = result.wd_user_vocabulary;
+        const user_vocabulary = result.jhUserVocabulary;
         if (typeof user_vocabulary === 'undefined') {
-            chrome.storage.local.set({ "wd_user_vocabulary": {} });
+            chrome.storage.local.set({ "jhUserVocabulary": {} });
         }
-        const black_list = result.wd_black_list;
+        const black_list = result.jhBlackList;
         if (typeof black_list === 'undefined') {
-            chrome.storage.local.set({ "wd_black_list": {} });
+            chrome.storage.local.set({ "jhBlackList": {} });
         }
-        const white_list = result.wd_white_list;
+        const white_list = result.jhWhiteList;
         if (typeof white_list === 'undefined') {
-            chrome.storage.local.set({ "wd_white_list": {} });
+            chrome.storage.local.set({ "jhWhiteList": {} });
         }
     });
 
 
     chrome.runtime.onMessage.addListener((request) => {
         if (request.type === "tts_speak") {
-            if (!!request.word && typeof request.word === "string") {
-                chrome.tts.speak(request.word, { lang: "en", gender: "male" })
+            if (request.word && typeof request.word === "string") {
+                chrome.tts.speak(request.word, { lang: "ja" })
             }
         }
     });

@@ -1,4 +1,4 @@
-.wdAddButton {
+.wdAddButtonJA {
     width: 100% !important;
     min-width: 100% !important;
     max-width: 100% !important;
@@ -32,7 +32,7 @@
     border-width: 0px !important;
     vertical-align: baseline !important;
 }
-.wdAddButton:hover {
+.wdAddButtonJA:hover {
     background-color: #102310 !important;
     background: linear-gradient(to right, #102310, #102310) !important;
     box-shadow: none !important;
@@ -43,7 +43,7 @@
 }
 
 
-.wdInfoSpan {
+.wdInfoSpanJA {
     color: black !important;
     background-color: orange !important;
     font-size: 12px !important;
@@ -69,7 +69,7 @@
     float: left !important;
 }
 
-.wdFreqSpan {
+.wdFreqSpanJA {
     color: black;
     background-color: orange;
     font-size: 12px !important;
@@ -105,7 +105,7 @@
     float: right !important;
 }
 
-.wdSelectionBubble {
+.wdSelectionBubbleJA {
     width: 200px !important;
     top: 0px;
     left: 0px;

@@ -1,43 +1,39 @@
 {
-  "manifest_version": 2,
-  "name": "__MSG_appName__",
-  "description": "__MSG_appDesc__",
-  "default_locale": "en",
-  "version": "0.0.1",
-  "icons": {
-    "48": "images/result48.png"
-  },
-  "author": "cyj98",
-  "permissions": [
-    "activeTab",
-    "storage",
-    "unlimitedStorage",
-    "contextMenus",
-    "tts",
-    "identity"
-  ],
-  "optional_permissions": ["https://*/*"],
-  "content_security_policy": "script-src 'self' https://*.google.com 'unsafe-eval'; object-src 'self'",
-  "background": {
-    "scripts": [
-      "scripts/background.js"
-    ]
-  },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "css": ["styles/content_script.css"],
-      "js": [
-        "scripts/content_script.js"
-      ],
-      "run_at": "document_start"
-    }
-  ],
-  "browser_action": {
-    "default_popup": "html/popup.html"
-  },
-  "options_ui": {
-    "page": "html/options.html"
-  },
-  "web_accessible_resources": ["data/eng_dict.txt", "data/eng_idioms.txt", "dict/*"]
+    "manifest_version": 2,
+    "name": "__MSG_appName__",
+    "description": "__MSG_appDesc__",
+    "default_locale": "en",
+    "version": "0.0.1",
+    "icons": {
+        "48": "images/result48.png"
+    },
+    "author": "cyj98",
+    "permissions": [
+        "contextMenus",
+        "storage",
+        "unlimitedStorage",
+        "activeTab",
+        "tts",
+        "identity"
+    ],
+    "optional_permissions": ["https://*/*"],
+    "content_security_policy": "script-src 'self' https://*.google.com 'unsafe-eval'; object-src 'self'",
+    "background": {
+        "scripts": ["scripts/background.js"]
+    },
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "css": ["styles/content_script.css"],
+            "js": ["scripts/content_script.js"],
+            "run_at": "document_start"
+        }
+    ],
+    "browser_action": {
+        "default_popup": "html/popup.html"
+    },
+    "options_ui": {
+        "page": "html/options.html"
+    },
+    "web_accessible_resources": ["data/mecab.data", "data/mecab.wasm", "data/mybccwj.csv"]
 }

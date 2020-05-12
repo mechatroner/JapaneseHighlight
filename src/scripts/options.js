@@ -1,43 +1,44 @@
-import { saveAs } from './Filesaver'
-import { make_hl_style, 
+import { saveAs } from './lib/Filesaver'
+import {
+    make_hl_style,
     localizeHtmlPage
-} from './common_lib'
-import { initContextMenus, make_default_online_dicts } from './context_menu_lib'
+} from './lib/common_lib'
+import { initContextMenus, make_default_online_dicts } from './lib/context_menu_lib'
 
-var wd_hl_settings = null;
-var wd_hover_settings = null;
-var wd_online_dicts = null;
-var wd_enable_tts = false;
+var jhHlSettings = null;
+var jhHoverSettings = null;
+var jhOnlineDicts = null;
+var jhEnableTTS = false;
 
 var wc_rb_ids = ['wc1', 'wc2', 'wc3', 'wc4', 'wc5'];
-var ic_rb_ids = ['ic1', 'ic2', 'ic3', 'ic4', 'ic5'];
+// var ic_rb_ids = ['ic1', 'ic2', 'ic3', 'ic4', 'ic5'];
 var wb_rb_ids = ['wb1', 'wb2', 'wb3', 'wb4', 'wb5'];
-var ib_rb_ids = ['ib1', 'ib2', 'ib3', 'ib4', 'ib5'];
+// var ib_rb_ids = ['ib1', 'ib2', 'ib3', 'ib4', 'ib5'];
 
 var hover_popup_types = ['never', 'key', 'always'];
 var target_types = ['hl', 'ow']
 
 
 function display_sync_interface() {
-    chrome.storage.local.get(["wd_gd_sync_enabled", "wd_last_sync_error", "wd_last_sync"], result => {
-        const wd_last_sync_error = result.wd_last_sync_error;
-        const wd_gd_sync_enabled = result.wd_gd_sync_enabled;
-        const wd_last_sync = result.wd_last_sync;
-        if (!wd_gd_sync_enabled) {
+    chrome.storage.local.get(["jhGdSyncEnabled", "jhLastSyncError", "jhLastSync"], result => {
+        const jhLastSyncError = result.jhLastSyncError;
+        const jhGdSyncEnabled = result.jhGdSyncEnabled;
+        const jhLastSync = result.jhLastSync;
+        if (!jhGdSyncEnabled) {
             document.getElementById("gdStopSyncButton").style.display = 'none';
             document.getElementById("syncStatusFeedback").style.display = 'none';
             return;
         }
         document.getElementById("gdStopSyncButton").style.display = 'inline-block';
         document.getElementById("syncStatusFeedback").style.display = 'inline';
-        if (wd_last_sync_error != null) {
-            document.getElementById("syncStatusFeedback").textContent = 'Error: ' + wd_last_sync_error;
+        if (jhLastSyncError != null) {
+            document.getElementById("syncStatusFeedback").textContent = 'Error: ' + jhLastSyncError;
         } else {
             document.getElementById("syncStatusFeedback").textContent = "Synchronized.";
         }
-        if (typeof wd_last_sync !== 'undefined') {
+        if (typeof jhLastSync !== 'undefined') {
             var cur_date = new Date();
-            var seconds_passed = (cur_date.getTime() - wd_last_sync) / 1000;
+            var seconds_passed = (cur_date.getTime() - jhLastSync) / 1000;
             var p_days = Math.floor(seconds_passed / (3600 * 24));
             seconds_passed %= (3600 * 24);
             var p_hours = Math.floor(seconds_passed / 3600);
@@ -68,7 +69,7 @@ function synchronize_now() {
     });
     document.getElementById("syncStatusFeedback").style.display = 'inline';
     document.getElementById("syncStatusFeedback").textContent = "Synchronization started...";
-    chrome.storage.local.set({ "wd_gd_sync_enabled": true }, () => {
+    chrome.storage.local.set({ "jhGdSyncEnabled": true }, () => {
         chrome.runtime.sendMessage({ wdm_request: "gd_sync", interactive_mode: true });
     });
 }
@@ -84,7 +85,7 @@ function request_permissions_and_sync() {
 
 
 function stop_synchronization() {
-    chrome.storage.local.set({ "wd_gd_sync_enabled": false }, display_sync_interface);
+    chrome.storage.local.set({ "jhGdSyncEnabled": false }, display_sync_interface);
 }
 
 
@@ -121,8 +122,8 @@ function process_set_dbg() {
 
 
 function process_export() {
-    chrome.storage.local.get(['wd_user_vocabulary'], result => {
-        var user_vocabulary = result.wd_user_vocabulary;
+    chrome.storage.local.get(['jhUserVocabulary'], result => {
+        var user_vocabulary = result.jhUserVocabulary;
         const keys = []
         for (var key in user_vocabulary) {
             if (Object.prototype.hasOwnProperty.call(user_vocabulary, key)) {
@@ -167,9 +168,9 @@ function process_add_dict() {
     dictUrl = dictUrl.trim();
     if (!dictName || !dictUrl)
         return;
-    wd_online_dicts.push({ title: dictName, url: dictUrl });
-    chrome.storage.local.set({ "wd_online_dicts": wd_online_dicts });
-    initContextMenus(wd_online_dicts);
+    jhOnlineDicts.push({ title: dictName, url: dictUrl });
+    chrome.storage.local.set({ "jhOnlineDicts": jhOnlineDicts });
+    initContextMenus(jhOnlineDicts);
     show_user_dicts();
     document.getElementById('addDictName').value = "";
     document.getElementById('addDictUrl').value = "";
@@ -192,7 +193,7 @@ function process_test_old_dict(e) {
     if (!btn_id.startsWith('testDictBtn_'))
         return;
     var btn_no = parseInt(btn_id.split('_')[1]);
-    const url = wd_online_dicts[btn_no].url + 'test';
+    const url = jhOnlineDicts[btn_no].url + 'test';
     chrome.tabs.create({ 'url': url });
 }
 
@@ -203,9 +204,9 @@ function process_delete_old_dict(e) {
     if (!btn_id.startsWith('delDict'))
         return;
     var btn_no = parseInt(btn_id.split('_')[1]);
-    wd_online_dicts.splice(btn_no, 1);
-    chrome.storage.local.set({ "wd_online_dicts": wd_online_dicts });
-    initContextMenus(wd_online_dicts);
+    jhOnlineDicts.splice(btn_no, 1);
+    chrome.storage.local.set({ "jhOnlineDicts": jhOnlineDicts });
+    initContextMenus(jhOnlineDicts);
     show_user_dicts();
 }
 
@@ -215,7 +216,7 @@ function show_user_dicts() {
     while (dicts_block.firstChild) {
         dicts_block.removeChild(dicts_block.firstChild);
     }
-    var dictPairs = wd_online_dicts;
+    var dictPairs = jhOnlineDicts;
     for (var i = 0; i < dictPairs.length; ++i) {
         var nameSpan = document.createElement('span');
         nameSpan.setAttribute('class', 'existingDictName');
@@ -252,45 +253,45 @@ function show_user_dicts() {
 
 
 function show_internal_state() {
-    var word_hl_params = wd_hl_settings.wordParams;
-    var idiom_hl_params = wd_hl_settings.idiomParams;
+    var word_hl_params = jhHlSettings.wordParams;
+    // var idiom_hl_params = jhHlSettings.idiomParams;
 
 
     document.getElementById("wordsEnabled").checked = word_hl_params.enabled;
-    document.getElementById("idiomsEnabled").checked = idiom_hl_params.enabled;
+    // document.getElementById("idiomsEnabled").checked = idiom_hl_params.enabled;
     document.getElementById("wordsBlock").style.display = word_hl_params.enabled ? "block" : "none";
-    document.getElementById("idiomsBlock").style.display = idiom_hl_params.enabled ? "block" : "none";
+    // document.getElementById("idiomsBlock").style.display = idiom_hl_params.enabled ? "block" : "none";
 
     document.getElementById("wordsBold").checked = word_hl_params.bold;
-    document.getElementById("idiomsBold").checked = idiom_hl_params.bold;
+    // document.getElementById("idiomsBold").checked = idiom_hl_params.bold;
 
     document.getElementById("wordsBackground").checked = word_hl_params.useBackground;
-    document.getElementById("idiomsBackground").checked = idiom_hl_params.useBackground;
+    // document.getElementById("idiomsBackground").checked = idiom_hl_params.useBackground;
 
     document.getElementById("wordsColor").checked = word_hl_params.useColor;
-    document.getElementById("idiomsColor").checked = idiom_hl_params.useColor;
+    // document.getElementById("idiomsColor").checked = idiom_hl_params.useColor;
 
-    document.getElementById("pronunciationEnabled").checked = wd_enable_tts;
+    document.getElementById("pronunciationEnabled").checked = jhEnableTTS;
 
     document.getElementById("wcRadioBlock").style.display = word_hl_params.useColor ? "block" : "none";
     show_rb_states(wc_rb_ids, word_hl_params.color);
-    document.getElementById("icRadioBlock").style.display = idiom_hl_params.useColor ? "block" : "none";
-    show_rb_states(ic_rb_ids, idiom_hl_params.color);
+    // document.getElementById("icRadioBlock").style.display = idiom_hl_params.useColor ? "block" : "none";
+    // show_rb_states(ic_rb_ids, idiom_hl_params.color);
     document.getElementById("wbRadioBlock").style.display = word_hl_params.useBackground ? "block" : "none";
     show_rb_states(wb_rb_ids, word_hl_params.backgroundColor);
-    document.getElementById("ibRadioBlock").style.display = idiom_hl_params.useBackground ? "block" : "none";
-    show_rb_states(ib_rb_ids, idiom_hl_params.backgroundColor);
+    // document.getElementById("ibRadioBlock").style.display = idiom_hl_params.useBackground ? "block" : "none";
+    // show_rb_states(ib_rb_ids, idiom_hl_params.backgroundColor);
 
     for (var t = 0; t < target_types.length; t++) {
         const ttype = target_types[t];
         for (var i = 0; i < hover_popup_types.length; i++) {
-            const is_hit = (hover_popup_types[i] == wd_hover_settings[ttype + "_hover"])
+            const is_hit = (hover_popup_types[i] == jhHoverSettings[ttype + "_hover"])
             document.getElementById(ttype + "b_" + hover_popup_types[i]).checked = is_hit;
         }
     }
 
     highlight_example_text(word_hl_params, "wordHlText", "wql", "wqr");
-    highlight_example_text(idiom_hl_params, "idiomHlText", "iql", "iqr");
+    // highlight_example_text(idiom_hl_params, "idiomHlText", "iql", "iqr");
     show_user_dicts();
 }
 
@@ -348,11 +349,11 @@ function hover_rb_handler() {
             const param_key = ttype + "_hover";
             const rbElem = document.getElementById(element_id);
             if (rbElem.checked) {
-                wd_hover_settings[param_key] = hover_popup_types[i];
+                jhHoverSettings[param_key] = hover_popup_types[i];
             }
         }
     }
-    chrome.storage.local.set({ 'wd_hover_settings': wd_hover_settings });
+    chrome.storage.local.set({ 'jhHoverSettings': jhHoverSettings });
 }
 
 
@@ -368,30 +369,30 @@ function add_hover_rb_listeners() {
 
 function process_display() {
     window.onload = () => {
-        chrome.storage.local.get(["wd_hl_settings", "wd_hover_settings", "wd_online_dicts", "wd_developer_mode", "wd_enable_tts"], result => {
+        chrome.storage.local.get(["jhHlSettings", "jhHoverSettings", "jhOnlineDicts", "wd_developer_mode", "jhEnableTTS"], result => {
             assign_back_labels();
-            wd_hl_settings = result.wd_hl_settings;
-            wd_hover_settings = result.wd_hover_settings;
-            wd_online_dicts = result.wd_online_dicts;
-            wd_enable_tts = result.wd_enable_tts ? true : false;
+            jhHlSettings = result.jhHlSettings;
+            jhHoverSettings = result.jhHoverSettings;
+            jhOnlineDicts = result.jhOnlineDicts;
+            jhEnableTTS = result.jhEnableTTS ? true : false;
 
             var wd_developer_mode = result.wd_developer_mode;
 
             //TODO fix this monstrosity using this wrapper-function hack: 
             //http://stackoverflow.com/questions/7053965/when-using-callbacks-inside-a-loop-in-javascript-is-there-any-way-to-save-a-var
-            handle_rb_loop(wc_rb_ids, wd_hl_settings.wordParams, "color");
-            handle_rb_loop(ic_rb_ids, wd_hl_settings.idiomParams, "color");
-            handle_rb_loop(wb_rb_ids, wd_hl_settings.wordParams, "backgroundColor");
-            handle_rb_loop(ib_rb_ids, wd_hl_settings.idiomParams, "backgroundColor");
+            handle_rb_loop(wc_rb_ids, jhHlSettings.wordParams, "color");
+            // handle_rb_loop(ic_rb_ids, jhHlSettings.idiomParams, "color");
+            handle_rb_loop(wb_rb_ids, jhHlSettings.wordParams, "backgroundColor");
+            // handle_rb_loop(ib_rb_ids, jhHlSettings.idiomParams, "backgroundColor");
 
-            add_cb_event_listener("wordsEnabled", wd_hl_settings.wordParams, "enabled");
-            add_cb_event_listener("idiomsEnabled", wd_hl_settings.idiomParams, "enabled");
-            add_cb_event_listener("wordsBold", wd_hl_settings.wordParams, "bold");
-            add_cb_event_listener("idiomsBold", wd_hl_settings.idiomParams, "bold");
-            add_cb_event_listener("wordsBackground", wd_hl_settings.wordParams, "useBackground");
-            add_cb_event_listener("idiomsBackground", wd_hl_settings.idiomParams, "useBackground");
-            add_cb_event_listener("wordsColor", wd_hl_settings.wordParams, "useColor");
-            add_cb_event_listener("idiomsColor", wd_hl_settings.idiomParams, "useColor");
+            add_cb_event_listener("wordsEnabled", jhHlSettings.wordParams, "enabled");
+            // add_cb_event_listener("idiomsEnabled", jhHlSettings.idiomParams, "enabled");
+            add_cb_event_listener("wordsBold", jhHlSettings.wordParams, "bold");
+            // add_cb_event_listener("idiomsBold", jhHlSettings.idiomParams, "bold");
+            add_cb_event_listener("wordsBackground", jhHlSettings.wordParams, "useBackground");
+            // add_cb_event_listener("idiomsBackground", jhHlSettings.idiomParams, "useBackground");
+            add_cb_event_listener("wordsColor", jhHlSettings.wordParams, "useColor");
+            // add_cb_event_listener("idiomsColor", jhHlSettings.idiomParams, "useColor");
 
             add_hover_rb_listeners();
 
@@ -416,19 +417,19 @@ function process_display() {
             document.getElementById("moreInfoLink").href = chrome.extension.getURL('../html/sync_help.html');
 
             document.getElementById("saveVisuals").addEventListener("click", () => {
-                chrome.storage.local.set({ 'wd_hl_settings': wd_hl_settings });
+                chrome.storage.local.set({ 'jhHlSettings': jhHlSettings });
             });
 
             document.getElementById("defaultDicts").addEventListener("click", () => {
-                wd_online_dicts = make_default_online_dicts();
-                chrome.storage.local.set({ "wd_online_dicts": wd_online_dicts });
-                initContextMenus(wd_online_dicts);
+                jhOnlineDicts = make_default_online_dicts();
+                chrome.storage.local.set({ "jhOnlineDicts": jhOnlineDicts });
+                initContextMenus(jhOnlineDicts);
                 show_user_dicts();
             });
 
             document.getElementById("pronunciationEnabled").addEventListener("click", e => {
-                wd_enable_tts = e.target.checked;
-                chrome.storage.local.set({ "wd_enable_tts": wd_enable_tts });
+                jhEnableTTS = e.target.checked;
+                chrome.storage.local.set({ "jhEnableTTS": jhEnableTTS });
             });
 
             display_sync_interface();

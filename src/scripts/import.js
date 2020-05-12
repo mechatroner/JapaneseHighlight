@@ -1,5 +1,5 @@
 
-import { sync_if_needed, localizeHtmlPage } from './common_lib'
+import { sync_if_needed, localizeHtmlPage } from './lib/common_lib'
 
 function parse_vocabulary(text) {
     var lines = text.split('\n');
@@ -17,12 +17,12 @@ function parse_vocabulary(text) {
 }
 
 function add_new_words(new_words) {
-    chrome.storage.local.get(['wd_user_vocabulary', 'wd_user_vocab_added', 'wd_user_vocab_deleted'], result => {
-        var user_vocabulary = result.wd_user_vocabulary;
+    chrome.storage.local.get(['jhUserVocabulary', 'wd_user_vocab_added', 'wd_user_vocab_deleted'], result => {
+        var user_vocabulary = result.jhUserVocabulary;
         var wd_user_vocab_added = result.wd_user_vocab_added;
         var wd_user_vocab_deleted = result.wd_user_vocab_deleted;
         var num_added = 0;
-        var new_state = { "wd_user_vocabulary": user_vocabulary };
+        var new_state = { "jhUserVocabulary": user_vocabulary };
         for (var i = 0; i < new_words.length; ++i) {
             var word = new_words[i];
             if (!(Object.prototype.hasOwnProperty.call(user_vocabulary, word))) {

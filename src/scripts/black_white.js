@@ -1,6 +1,6 @@
-import { sync_if_needed } from './common_lib'
+import { sync_if_needed } from './lib/common_lib'
 
-var list_section_names = { 'wd_black_list': 'blackListSection', 'wd_white_list': 'whiteListSection', 'wd_user_vocabulary': 'vocabularySection' };
+var list_section_names = { 'jhBlackList': 'blackListSection', 'jhWhiteList': 'whiteListSection', 'jhUserVocabulary': 'vocabularySection' };
 
 function process_delete_simple(list_name, key) {
     chrome.storage.local.get([list_name], result => {
@@ -12,11 +12,11 @@ function process_delete_simple(list_name, key) {
 }
 
 function process_delete_vocab_entry(key) {
-    chrome.storage.local.get(['wd_user_vocabulary', 'wd_user_vocab_added', 'wd_user_vocab_deleted'], result => {
-        var user_vocabulary = result.wd_user_vocabulary;
+    chrome.storage.local.get(['jhUserVocabulary', 'wd_user_vocab_added', 'wd_user_vocab_deleted'], result => {
+        var user_vocabulary = result.jhUserVocabulary;
         var wd_user_vocab_added = result.wd_user_vocab_added;
         var wd_user_vocab_deleted = result.wd_user_vocab_deleted;
-        var new_state = { 'wd_user_vocabulary': user_vocabulary };
+        var new_state = { 'jhUserVocabulary': user_vocabulary };
         delete user_vocabulary[key];
         if (typeof wd_user_vocab_added !== 'undefined') {
             delete wd_user_vocab_added[key];
@@ -27,7 +27,7 @@ function process_delete_vocab_entry(key) {
             new_state['wd_user_vocab_deleted'] = wd_user_vocab_deleted;
         }
         chrome.storage.local.set(new_state, sync_if_needed);
-        show_user_list('wd_user_vocabulary', user_vocabulary);
+        show_user_list('jhUserVocabulary', user_vocabulary);
     });
 }
 
@@ -35,7 +35,7 @@ function create_button(list_name, text) {
     var result = document.createElement("button");
     result.setAttribute("class", "deleteButton");
     result.expression_text = text;
-    if (list_name === 'wd_user_vocabulary') {
+    if (list_name === 'jhUserVocabulary') {
         result.addEventListener("click", function () { process_delete_vocab_entry(this.expression_text); });
     } else {
         result.addEventListener("click", function () { process_delete_simple(list_name, this.expression_text); });
@@ -87,11 +87,11 @@ function process_display() {
     // TODO replace this clumsy logic by adding a special "data-list-name" attribute and renaming all 3 tags to "userListSection"
     let list_name = undefined;
     if (document.getElementById("blackListSection")) {
-        list_name = "wd_black_list";
+        list_name = "jhBlackList";
     } else if (document.getElementById("whiteListSection")) {
-        list_name = "wd_white_list";
+        list_name = "jhWhiteList";
     } else {
-        list_name = "wd_user_vocabulary";
+        list_name = "jhUserVocabulary";
     }
 
     chrome.storage.local.get([list_name], result => {
