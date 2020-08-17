@@ -17,7 +17,6 @@
         "identity"
     ],
     "optional_permissions": ["https://*/*"],
-    "content_security_policy": "script-src 'self' https://*.google.com 'unsafe-eval'; object-src 'self'",
     "background": {
         "scripts": ["scripts/background.js"]
     },
@@ -35,5 +34,9 @@
     "options_ui": {
         "page": "html/options.html"
     },
-    "web_accessible_resources": ["data/mecab.data", "data/mecab.wasm", "data/mybccwj.csv"]
+    "web_accessible_resources": [
+        "data/mecab.data",
+        "data/mecab.wasm",
+        "data/mybccwj.csv"
+    ]
 }

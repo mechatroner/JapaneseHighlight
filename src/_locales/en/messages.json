@@ -1,10 +1,10 @@
 {
     "appName": {
-        "message": "Japanese Highlighter: Expand your vocabulary",
+        "message": "Japanese Highlighter: Expand your Japanese vocabulary",
         "description": "The title of the application, displayed in the web store. Note to the translator: Do not translate first two words 'Words Discoverer'"
     },
     "appDesc": {
-        "message": "Highlights rare English dictionary words and idioms on web pages. Facilitates English language learning and expands your vocabulary.",
+        "message": "Highlights rare Japanese dictionary words on web pages. Facilitates Japanese language learning and expands your vocabulary.",
         "description":"The description of the application, displayed in the web store."
     },
     "menuItem": {
@@ -12,15 +12,15 @@
         "description": "Text in context menu"
     },
     "rateTranslateDbg": {
-        "message": "Not highlighting 100 most common English words"
+        "message": "Not highlighting 100 most common Japanese words"
     },
     "rateInfo1": {
         "message": "Not highlighting",
-        "description": "1-st part of \"Not highlighting 100 most common English words\" sentence"
+        "description": "1-st part of \"Not highlighting 100 most common Japanese words\" sentence"
     },
     "rateInfo2": {
-        "message": "most common English words.",
-        "description": "2-nd part of \"Not highlighting 100 most common English words\" sentence"
+        "message": "most common Japanese words.",
+        "description": "2-nd part of \"Not highlighting 100 most common Japanese words\" sentence"
     },
     "adjust": {
         "message": "More Settings..."

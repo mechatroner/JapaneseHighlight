@@ -1,16 +1,17 @@
 export function request_unhighlight(lemma) {
     chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+        // for (const tab of tabs) {
         chrome.tabs.sendMessage(tabs[0].id, { wdm_unhighlight: lemma });
+        // }
+        // chrome.tabs.sendMessage(tabs[0].id, { wdm_unhighlight: lemma });
     });
 }
-
 
 // export function make_id_suffix(text) {
 // const before = btoa(text);
 // return before.replace(/\+/g, '_').replace(/\//g, '-').replace(/=/g, '_')
 // return after;
 // }
-
 
 export function sync_if_needed() {
     var req_keys = ['jhLastSync', 'jhGdSyncEnabled', 'jhLastSyncError'];
@@ -80,7 +81,7 @@ export function add_lexeme(lexeme, result_handler) {
             result_handler("bad", undefined);
             return;
         }
-        lexeme = lexeme.toLowerCase();
+        // lexeme = lexeme.toLowerCase();
         lexeme = lexeme.trim();
         if (!lexeme) {
             result_handler("bad", undefined);

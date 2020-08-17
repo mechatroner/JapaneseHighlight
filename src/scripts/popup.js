@@ -151,7 +151,7 @@ function init_controls() {
 
         document.getElementById("addText").addEventListener("keyup", event => {
             event.preventDefault();
-            if (event.keyCode == 13) {
+            if (event.key == 'Enter') {
                 process_add_word();
             }
         });

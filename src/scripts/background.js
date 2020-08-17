@@ -1,5 +1,7 @@
 // import browser from "webextension-polyfill";
 import { initContextMenus, make_default_online_dicts } from './lib/context_menu_lib'
+import workerFunction from './lib/mecab_worker'
+
 
 var gapi_loaded = false;
 var gapi_inited = false;
@@ -335,6 +337,11 @@ function start_sync_sequence(interactive_authorization) {
 
 
 function initialize_extension() {
+    const mecabWorker = new SharedWorker(URL.createObjectURL(new Blob(["(" + workerFunction.toString() + ")()"], { type: 'text/javascript' })));
+    mecabWorker.port.start();
+    // mecabWorker.postMessage({ 'message': 'getInstance' })
+    // , 'mecabWasmPath': chrome.runtime.getURL('data/mecab.wasm'), 'mecabDataPath': chrome.runtime.getURL('data/mecab.data')
+
     chrome.runtime.onMessage.addListener((request, sender) => {
         // if (request.wdm_request == "hostname") {
         // const tab_url = sender.tab.url;

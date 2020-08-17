@@ -15,6 +15,5 @@ package-lock.json
 *.log
 
 /src/data/*
-/src/scripts/lib/mecab.js
 
 /mecab*

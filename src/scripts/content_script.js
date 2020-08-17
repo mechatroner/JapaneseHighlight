@@ -1,13 +1,14 @@
 // import browser from 'webextension-polyfill'
+import PQueue from 'p-queue'
 import { make_hl_style, add_lexeme, readFile, processData } from './lib/common_lib'
 import { get_dict_definition_url } from './lib/context_menu_lib'
-import Module from './lib/mecab'
+import workerFunction from './lib/mecab_worker'
 
-const args = '-r mecabrc -d unidic/ input.txt -o output.txt'
+let mecabWorker = new SharedWorker(URL.createObjectURL(new Blob(["(" + workerFunction.toString() + ")()"], { type: 'text/javascript' })));
+const mecabQueue = new PQueue({ concurrency: 1 });
+
 const classNamePrefix = 'wdautohlja_'
 const JapaneseRegex = /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/
-let mecabDo = null;
-let mecab = null;
 let JaDict = null;
 
 let jhMinimunRank = 1;
@@ -35,12 +36,6 @@ let node_to_render_id = null;
 //     return 'wdautohlja_none_none';
 // }
 
-function assert(condition, message) {
-    if (!condition) {
-        throw message || "Assertion failed";
-    }
-}
-
 function limit_text_len(word) {
     if (!word)
         return word;
@@ -59,81 +54,10 @@ function getHeatColorPoint(freqPercent) {
     return "hsl(" + hue + ", 100%, 50%)";
 }
 
-function text_to_hl_nodes(text, dst) {
-    const tokenize_other = jhHoverSettings.ow_hover != 'never';
-    let ibegin = 0; //beginning of word
-    const matches = [];
-
-    const spaceRegex = /\s/g;
-    const processedText = text.replace(spaceRegex, "、")
-    mecab.FS.writeFile('input.txt', processedText)
-    mecabDo(args);
-    const output = mecab.FS.readFile('output.txt', { encoding: "utf8" });
-    const lines = output.split('\n');
-
-    // length - 2 because last 2 lines always are "EOS" ""
-    for (let i = 0; i < lines.length - 2; ++i) {
-        const textArr = lines[i].split('\t')
-        const originalWord = textArr[0]
-        // console.log(textArr)
-        if (!originalWord.match(JapaneseRegex)) {
-            ibegin += originalWord.length;
-            continue
-        }
-        let lemma = textArr[3]
-        if (lemma.includes('-')) {
-            lemma = textArr[2]
-        }
-        let match = undefined;
-        if (!match && jhHlSettings.wordParams.enabled && !Object.prototype.hasOwnProperty.call(user_vocabulary, lemma)) {
-            const wordFound = JaDict.find(obj => (obj.lemma === lemma))
-            if (wordFound && wordFound.rank >= jhMinimunRank) {
-                match = { normalized: lemma, kind: "lemma", begin: ibegin, end: ibegin + originalWord.length, rank: wordFound.rank, frequency: wordFound.frequency };
-            }
-        }
-        if (tokenize_other && !match) {
-            match = { normalized: null, kind: "word", begin: ibegin, end: ibegin + originalWord.length };
-        }
-        if (match) {
-            matches.push(match)
-        }
-        ibegin += originalWord.length;
+function assert(condition, message) {
+    if (!condition) {
+        throw message || "Assertion failed";
     }
-
-    let last_hl_end_pos = 0;
-    let insert_count = 0;
-    for (const match of matches) {
-        insert_count += 1;
-        let text_style = undefined;
-        let className = undefined;
-        if (match.kind === "lemma") {
-            const hlParams = jhHlSettings.wordParams;
-            text_style = make_hl_style(hlParams);
-            className = `${match.normalized}-${match.rank}:${match.frequency}`
-        } else if (match.kind === "word") {
-            text_style = "font:inherit;display:inline;color:inherit;background-color:inherit;"
-            className = match.normalized
-        }
-        if (last_hl_end_pos < match.begin) {
-            dst.push(document.createTextNode(text.slice(last_hl_end_pos, match.begin)));
-        }
-        last_hl_end_pos = match.end;
-        //span = document.createElement("span");
-        const span = document.createElement("wdautohlja-customtag");
-        span.textContent = text.slice(match.begin, last_hl_end_pos);
-        span.setAttribute("style", text_style);
-        span.id = 'wdautohlja_id' + cur_wd_node_id;
-        cur_wd_node_id += 1;
-        const wdclassname = classNamePrefix + className;
-        span.setAttribute("class", wdclassname);
-        dst.push(span);
-    }
-
-    if (insert_count && last_hl_end_pos < text.length) {
-        dst.push(document.createTextNode(text.slice(last_hl_end_pos, text.length)));
-    }
-
-    return insert_count;
 }
 
 const good_tags_list = ["P", "H1", "H2", "H3", "H4", "H5", "H6", "B", "SMALL", "STRONG", "Q", "DIV", "SPAN"];
@@ -151,22 +75,109 @@ function textNodesUnder(el) {
         a.push(n);
         n = walk.nextNode()
     }
-    return a;
+    doHighlightText(a)
+    // return a;
 }
 
-function doHighlightText(textNodes) {
-    if (textNodes === null || JaDict === null || jhMinimunRank === null) {
+function text_to_hl_nodes(text, new_children) {
+    return new Promise(resolve => {
+        // const text = textNode.textContent
+        // console.log('1', text)
+        mecabWorker.port.postMessage({ text })
+        mecabWorker.onerror = (e) => {
+            console.error(e)
+        }
+        mecabWorker.port.onmessageerror = (e) => {
+            console.error(e)
+        }
+        mecabWorker.port.onmessage = (e) => {
+            // && e.data.timestamp === timestamp
+            // if (e.data.message === 'postTokenize') {
+            const tokenize_other = jhHoverSettings.ow_hover != 'never';
+            let ibegin = 0; //beginning of word
+            const matches = [];
+            const lines = e.data.output.split('\n');
+
+            // length - 2 because last 2 lines always are "EOS" ""
+            for (let i = 0; i < lines.length - 2; ++i) {
+                const textArr = lines[i].split('\t')
+                const originalWord = textArr[0]
+                if (!originalWord.match(JapaneseRegex)) {
+                    ibegin += originalWord.length;
+                    continue
+                }
+                let lemma = textArr[3]
+                if (lemma.includes('-')) {
+                    lemma = textArr[2]
+                }
+                let match = undefined;
+                if (!match && jhHlSettings.wordParams.enabled && !Object.prototype.hasOwnProperty.call(user_vocabulary, lemma)) {
+                    const wordFound = JaDict.find(obj => (obj.lemma === lemma))
+                    if (wordFound && wordFound.rank >= jhMinimunRank) {
+                        match = { normalized: lemma, kind: "lemma", begin: ibegin, end: ibegin + originalWord.length, rank: wordFound.rank, frequency: wordFound.frequency };
+                    }
+                }
+                if (tokenize_other && !match) {
+                    match = { normalized: null, kind: "word", begin: ibegin, end: ibegin + originalWord.length };
+                }
+                if (match) {
+                    matches.push(match)
+                }
+                ibegin += originalWord.length;
+            }
+
+            let last_hl_end_pos = 0;
+            let insert_count = 0;
+            for (const match of matches) {
+                insert_count += 1;
+                let text_style = undefined;
+                let className = undefined;
+                if (match.kind === "lemma") {
+                    const hlParams = jhHlSettings.wordParams;
+                    text_style = make_hl_style(hlParams);
+                    className = `${match.normalized}-${match.rank}:${match.frequency}`
+                } else if (match.kind === "word") {
+                    text_style = "font:inherit;display:inline;color:inherit;background-color:inherit;"
+                    className = match.normalized
+                }
+                if (last_hl_end_pos < match.begin) {
+                    // console.log(last_hl_end_pos, match.begin)
+                    new_children.push(document.createTextNode(text.slice(last_hl_end_pos, match.begin)));
+                }
+                last_hl_end_pos = match.end;
+                //span = document.createElement("span");
+                const span = document.createElement("wdautohlja-customtag");
+                span.textContent = text.slice(match.begin, last_hl_end_pos);
+                span.setAttribute("style", text_style);
+                span.id = 'wdautohlja_id' + cur_wd_node_id;
+                cur_wd_node_id += 1;
+                const wdclassname = classNamePrefix + className;
+                span.setAttribute("class", wdclassname);
+                new_children.push(span);
+            }
+
+            if (insert_count && last_hl_end_pos < text.length) {
+                new_children.push(document.createTextNode(text.slice(last_hl_end_pos, text.length)));
+            }
+            // console.log(text, lines)
+            resolve(insert_count)
+        }
+    })
+}
+
+async function doHighlightText(textNodes) {
+    if (textNodes === null || textNodes.length === 0 || JaDict === null || jhMinimunRank === null) {
         return;
     }
     if (disable_by_keypress) {
         return;
     }
-    var num_found = 0;
-    for (var i = 0; i < textNodes.length; i++) {
-        if (textNodes[i].offsetParent === null) {
+
+    for (const textNode of textNodes) {
+        if (textNodes.offsetParent === null) {
             continue;
         }
-        const text = textNodes[i].textContent;
+        const text = textNode.textContent;
         if (text.length <= 3) {
             continue;
         }
@@ -177,20 +188,19 @@ function doHighlightText(textNodes) {
             continue
         }
         const new_children = []
+
         // console.time('textToNodes')
-        const found_count = text_to_hl_nodes(text, new_children);
+        const insert_count = await mecabQueue.add(() => (text_to_hl_nodes(text, new_children)));
         // console.timeEnd('textToNodes')
-        if (found_count) {
-            num_found += found_count;
-            const parent_node = textNodes[i].parentNode;
+        if (insert_count) {
+            // num_found += found_count;
+            const parent_node = textNode.parentNode;
             assert(new_children.length > 0, "children must be non empty");
             for (var j = 0; j < new_children.length; j++) {
-                parent_node.insertBefore(new_children[j], textNodes[i]);
+                parent_node.insertBefore(new_children[j], textNode);
             }
-            parent_node.removeChild(textNodes[i]);
+            parent_node.removeChild(textNode);
         }
-        if (num_found > 10000) //limiting number of words to highlight
-            break;
     }
 }
 
@@ -208,8 +218,9 @@ function onNodeInserted(event) {
         return;
     }
     if (!classattr || !classattr.startsWith("wdautohlja_")) {
-        const textNodes = textNodesUnder(inobj);
-        doHighlightText(textNodes);
+        textNodesUnder(inobj);
+        // const textNodes = textNodesUnder(inobj);
+        // doHighlightText(textNodes);
     }
 }
 
@@ -229,7 +240,7 @@ function bubble_handle_tts(lexeme) {
 
 
 function bubble_handle_add_result(report, lemma) {
-    if (report === "ok") {
+    if (report === "ok" || report === "exists") {
         unhighlight(lemma);
     }
 }
@@ -403,36 +414,21 @@ function initForPage() {
         // console.log(document.URL)
         // console.log(document.location.href)
         const verdict = get_verdict(is_enabled, jhBlackList, jhWhiteList, hostname);
+        // to change icon
         chrome.runtime.sendMessage({ wdm_verdict: verdict });
         if (verdict !== "highlight")
             return;
-
-        // console.time('load mecab module only')
-        Module().then((tmp) => {
-            // console.timeEnd('begin to load')
-            // console.timeEnd('load mecab module only')
-            mecab = tmp
-            mecabDo = mecab.cwrap('mecab_do2', 'number', ['string']);
-            mecab.FS.createDataFile('/', 'input.txt', '', true, true);
-            mecab.FS.createDataFile('/', 'output.txt', '', true, true);
-            // mecab.FS.writeFile('input.txt', 'すもももももももものうち');
-            // mecabDo(args);
-            // const output = mecab.FS.readFile('output.txt', { encoding: "utf8" });
-            // console.log(output)
-
-            const textNodes = textNodesUnder(document.body);
-            console.time('hl')
-            doHighlightText(textNodes);
-            console.timeEnd('hl')
-            document.addEventListener("DOMNodeInserted", onNodeInserted, false);
-        })
 
         const bccwj = chrome.runtime.getURL("../data/mybccwj.csv");
         readFile(bccwj).then((text) => {
             JaDict = processData(text)
             word_max_rank = JaDict.length - 1
-            // chrome.storage.local.set({ jhJpnDict });
+
+            textNodesUnder(document.body);
+            // TODO: 
+            document.addEventListener("DOMNodeInserted", onNodeInserted, false);
         })
+
         jhOnlineDicts = result.jhOnlineDicts;
         jhEnableTTS = result.jhEnableTTS;
         user_vocabulary = result.jhUserVocabulary;
@@ -442,13 +438,6 @@ function initForPage() {
         // dict_words = result.words_discoverer_eng_dict;
         // dict_idioms = result.wd_idioms;
         // const show_percents = result.wd_show_percents;
-        // jhMinimunRank = (show_percents * word_max_rank) / 100;
-
-        // chrome.runtime.sendMessage({ wdm_request: "hostname" }, response => {
-        // if (!response) {
-        // chrome.runtime.sendMessage({ wdm_verdict: 'unknown error' });
-        // return;
-        // }
 
         chrome.runtime.onMessage.addListener((request) => {
             if (request.wdm_unhighlight) {
@@ -458,22 +447,22 @@ function initForPage() {
         });
 
         document.addEventListener("keydown", event => {
-            if (event.keyCode == 17) {
+            if (event.key == 'Control') {
                 function_key_is_pressed = true;
                 renderBubble();
                 return;
             }
-            var elementTagName = event.target.tagName;
-            if (!disable_by_keypress && elementTagName != 'BODY') {
-                //workaround to prevent highlighting in facebook messages
-                //this logic can also be helpful in other situations, it's better play safe and stop highlighting when user enters data.
-                disable_by_keypress = true;
-                chrome.runtime.sendMessage({ wdm_verdict: "keyboard" });
-            }
+            // var elementTagName = event.target.tagName;
+            // if (!disable_by_keypress && elementTagName != 'BODY') {
+            //     //workaround to prevent highlighting in facebook messages
+            //     //this logic can also be helpful in other situations, it's better play safe and stop highlighting when user enters data.
+            //     disable_by_keypress = true;
+            //     chrome.runtime.sendMessage({ wdm_verdict: "keyboard" });
+            // }
         });
 
         document.addEventListener("keyup", event => {
-            if (event.keyCode == 17) {
+            if (event.key == 'Control') {
                 function_key_is_pressed = false;
                 return;
             }
@@ -481,7 +470,7 @@ function initForPage() {
 
         const bubbleDOM = create_bubble();
         document.body.appendChild(bubbleDOM);
-        document.addEventListener('mousedown', hideBubble(true), false);
+        // document.addEventListener('mousedown', hideBubble(true), false);
         document.addEventListener('mousemove', processMouse, false);
         window.addEventListener('scroll', () => {
             node_to_render_id = null;

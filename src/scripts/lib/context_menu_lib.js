@@ -196,7 +196,7 @@ function createDictionaryEntry(title, dictUrl, entryId) {
 }
 
 function context_handle_add_result(report, lemma) {
-    if (report === "ok") {
+    if (report === "ok" || report === 'exists') {
         request_unhighlight(lemma);
     }
 }
@@ -206,6 +206,10 @@ function onClickHandler(info) {
     add_lexeme(word, context_handle_add_result);
 }
 
+function ttsHandler(info) {
+    var word = info.selectionText;
+    chrome.tts.speak(word, { lang: "ja" })
+}
 
 export function make_default_online_dicts() {
     const result = [];
@@ -227,6 +231,7 @@ export function initContextMenus(dictPairs) {
     chrome.contextMenus.removeAll(() => {
         var title = chrome.i18n.getMessage("menuItem");
         chrome.contextMenus.create({ "title": title, "contexts": ["selection"], "id": "vocab_select_add", "onclick": onClickHandler });
+        chrome.contextMenus.create({ "title": 'Audio', "contexts": ["selection"], "id": "vocab_tts", "onclick": ttsHandler });
         chrome.contextMenus.create({ type: 'separator', "contexts": ["selection"], "id": "wd_separator_id" });
         if (dictPairs) {
             for (var i = 0; i < dictPairs.length; ++i) {
