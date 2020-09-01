@@ -1,6 +1,14 @@
 export default function workerFunction() {
-    let mecabWasmPath = "chrome-extension://ihdojpdjcdllbkophghfbedkiibiggbl/data/mecab.wasm"
-    let mecabDataPath = "chrome-extension://ihdojpdjcdllbkophghfbedkiibiggbl/data/mecab.data"
+
+    // Chrome
+    // let extensionID = "jkaebofgmgllgmbiinlegcoijdcoiinl"
+    // let extensionID = "dencpeliodlckbhnmhfkjejkhejpehmj"
+
+    // Edge Chromium
+    let extensionID = "hlpbdadceiikiafhiofdhhgegahpjghf"
+
+    const mecabWasmPath = `chrome-extension://${extensionID}/data/mecab.wasm`
+    const mecabDataPath = `chrome-extension://${extensionID}/data/mecab.data`
 
     var Module = (function () {
         var _scriptDir = typeof document !== 'undefined' && document.currentScript ? document.currentScript.src : undefined;

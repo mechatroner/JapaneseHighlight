@@ -1,6 +1,5 @@
 const path = require('path');
 const TerserPlugin = require('terser-webpack-plugin');
-const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = (_, argv) => {
@@ -21,7 +20,6 @@ module.exports = (_, argv) => {
         },
         plugins: [
             new CopyPlugin(['_locales/**/*', 'data/*', 'html/*', 'images/*.png', 'styles/*', 'manifest.json']),
-            new CleanWebpackPlugin()
         ],
     }
     if (argv.mode === 'production') {

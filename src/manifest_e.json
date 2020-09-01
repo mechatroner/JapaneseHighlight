@@ -1,0 +1,31 @@
+{
+    "author": "cyj98",
+    "background": {
+       "scripts": [ "scripts/background.js" ]
+    },
+    "browser_action": {
+       "default_popup": "html/popup.html"
+    },
+    "content_scripts": [ {
+       "css": [ "styles/content_script.css" ],
+       "js": [ "scripts/content_script.js" ],
+       "matches": [ "\u003Call_urls>" ],
+       "run_at": "document_start"
+    } ],
+    "default_locale": "en",
+    "description": "__MSG_appDesc__",
+    "icons": {
+       "48": "images/result48.png"
+    },
+    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAobVJu/y+yHDskc6SlRIuYyycKY2ObuXwq36YIMnehmwUejDCLAJSfqBi7n5TteoS+MkQiznbFtqkv525pdQTONqLNDDZyDLoCyPXAOENDOwXZ2P0ANr/btvWAKR+QZfC0IDqSiFTtl8OYc0KINRlyLCx6J818dfqNEWT3iVq9kXD3tSlFWHJxTssjw0i4KrkEo1Go2lrcJubPbny94q1GXshGUnwthqEQgf0LeRHN3OlgvHd8fI8EeBw1ubgZuxJyPnT6GnUek6XpltHD58ZtaP0iTZcLYQprUn9N7y17/R0Dcj9Q/dcgeXbiEzkLcaB5iOFEG6elGCubgQGhAnSlQIDAQAB",
+    "manifest_version": 2,
+    "name": "__MSG_appName__",
+    "optional_permissions": [ "https://*/*" ],
+    "options_ui": {
+       "page": "html/options.html"
+    },
+    "permissions": [ "contextMenus", "storage", "unlimitedStorage", "activeTab", "tts", "identity" ],
+    "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx",
+    "version": "0.0.2",
+    "web_accessible_resources": [ "data/mecab.data", "data/mecab.wasm", "data/mybccwj.csv" ]
+ }
