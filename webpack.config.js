@@ -1,6 +1,6 @@
-const path = require('path');
-const TerserPlugin = require('terser-webpack-plugin');
-const CopyPlugin = require('copy-webpack-plugin');
+const path = require('path')
+const TerserPlugin = require('terser-webpack-plugin')
+const CopyPlugin = require('copy-webpack-plugin')
 
 module.exports = (_, argv) => {
     const config = {
@@ -19,7 +19,14 @@ module.exports = (_, argv) => {
             path: path.resolve(__dirname, 'dist-chrome'),
         },
         plugins: [
-            new CopyPlugin(['_locales/**/*', 'data/*', 'html/*', 'images/*.png', 'styles/*', 'manifest.json']),
+            new CopyPlugin([
+                '_locales/**/*',
+                'data/*',
+                'html/*',
+                'images/*.png',
+                'styles/*',
+                'manifest.json',
+            ]),
         ],
     }
     if (argv.mode === 'production') {
@@ -29,4 +36,4 @@ module.exports = (_, argv) => {
         }
     }
     return config
-};
+}

@@ -4,4 +4,5 @@
 # production
 /dist-chrome
 
+src/scripts/lib/mecab.js
 src/scripts/lib/mecab_worker.js
