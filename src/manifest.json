@@ -24,14 +24,13 @@
     "options_ui": {
         "page": "html/options.html"
     },
-    "permissions": [
-        "contextMenus",
-        "storage",
-        "activeTab",
-        "tts"
-    ],
-    "content_security_policy": "object-src 'self'; script-src 'self' 'unsafe-eval';",
-    "version": "0.0.3",
+    "content_security_policy": "script-src 'self' https://*.google.com 'unsafe-eval'; object-src 'self'",
+    "oauth2": {
+        "client_id": "516018828037-1dpk3qpddnfti8nfp5iie3o9h7cv2833.apps.googleusercontent.com",
+        "scopes": ["https://www.googleapis.com/auth/drive.file"]
+    },
+    "permissions": ["contextMenus", "storage", "activeTab", "tts", "identity"],
+    "version": "0.1.2",
     "web_accessible_resources": [
         "data/mecab.data",
         "data/mecab.wasm",

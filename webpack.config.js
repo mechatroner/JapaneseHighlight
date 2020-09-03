@@ -4,7 +4,7 @@ const CopyPlugin = require('copy-webpack-plugin')
 
 module.exports = (_, argv) => {
     const config = {
-        mode: 'production',
+        mode: argv.mode ? argv.mode : 'development',
         context: path.resolve(__dirname, 'src'),
         entry: {
             background: './scripts/background.js',
@@ -15,7 +15,7 @@ module.exports = (_, argv) => {
             popup: './scripts/popup.js',
         },
         output: {
-            filename: './scripts/[name].js',
+            // filename: './scripts/[name].js',
             path: path.resolve(__dirname, 'dist-chrome'),
         },
         plugins: [
@@ -29,7 +29,7 @@ module.exports = (_, argv) => {
             ]),
         ],
     }
-    if (argv.mode === 'production') {
+    if (config.mode === 'production') {
         config.optimization = {
             minimize: true,
             minimizer: [new TerserPlugin()],

@@ -17,3 +17,5 @@ package-lock.json
 /src/data/*
 
 /mecab*
+
+config

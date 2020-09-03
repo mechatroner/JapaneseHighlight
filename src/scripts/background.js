@@ -5,9 +5,11 @@ import {
 } from './lib/context_menu_lib'
 import mecabModule from './lib/mecab'
 
-var gapi_loaded = false
-var gapi_inited = false
-let gapi = window.gapi
+/* global gapi */
+
+// let gapi = window.api
+let gapi_loaded = false
+let gapi_inited = false
 
 function report_sync_failure(error_msg) {
     chrome.storage.local.set({ jhLastSyncError: error_msg }, () => {
@@ -41,18 +43,18 @@ function authorize_user(interactive_authorization) {
     )
 }
 
-function transform_key(src_key) {
-    var dc = window.atob(src_key)
-    dc = dc.substring(3)
-    dc = dc.substring(0, dc.length - 6)
-    return dc
-}
+// function transform_key(src_key) {
+//     var dc = window.atob(src_key)
+//     dc = dc.substring(3)
+//     dc = dc.substring(0, dc.length - 6)
+//     return dc
+// }
 
-function generate_key() {
-    var protokey =
-        'b2ZCQUl6YVN5Q2hqM2xvZkJPWnV2TUt2TGNCSlVaa0RDTUhZa25NWktBa25NWktB'
-    return transform_key(protokey)
-}
+// function generate_key() {
+//     var protokey =
+//         'b2ZCQUl6YVN5Q2hqM2xvZkJPWnV2TUt2TGNCSlVaa0RDTUhZa25NWktBa25NWktB'
+//     return transform_key(protokey)
+// }
 
 function list_to_set(src_list) {
     const result = {}
@@ -328,7 +330,7 @@ function sync_user_vocabularies() {
                 wd_user_vocab_deleted = {}
             }
             var vocab = {
-                name: 'my_vocabulary',
+                name: 'japanese_vocabulary',
                 all: jhUserVocabulary,
                 added: wd_user_vocab_added,
                 deleted: wd_user_vocab_deleted,
@@ -339,8 +341,9 @@ function sync_user_vocabularies() {
 }
 
 function init_gapi(interactive_authorization) {
-    const gapikey = generate_key()
-    const init_params = { apiKey: gapikey }
+    // const gapikey = generate_key()
+    // const init_params = { apiKey: gapikey }
+    const init_params = { apiKey: 'AIzaSyB8O49UstOB-K_hB09_HaDA4E-VN6qmHrw' }
     gapi.client.init(init_params).then(
         () => {
             gapi_inited = true
@@ -380,7 +383,6 @@ function start_sync_sequence(interactive_authorization) {
 }
 
 function initialize_extension() {
-
     const mecabPromise = new mecabModule()
     mecabPromise.then((mecab) => {
         const args = '-r mecabrc -d unidic/ input.txt -o output.txt'

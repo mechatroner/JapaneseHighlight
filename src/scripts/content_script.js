@@ -7,15 +7,7 @@ import {
     processData,
 } from './lib/common_lib'
 import { get_dict_definition_url } from './lib/context_menu_lib'
-// import workerFunction from './lib/mecab_worker'
 
-// let mecabWorker = new SharedWorker(
-//     URL.createObjectURL(
-//         new Blob(['(' + workerFunction.toString() + ')()'], {
-//             type: 'text/javascript',
-//         })
-//     )
-// )
 const mecabQueue = new PQueue({ concurrency: 1 })
 
 const classNamePrefix = 'wdautohlja_'
@@ -34,7 +26,7 @@ let jhEnableTTS = null
 let disable_by_keypress = false
 
 let current_lexeme = ''
-let cur_wd_node_id = 1
+// let cur_wd_node_id = 1
 
 let function_key_is_pressed = false
 let rendered_node_id = null
@@ -110,13 +102,6 @@ function textNodesUnder(el) {
 
 function text_to_hl_nodes(text, new_children) {
     return new Promise((resolve) => {
-        // mecabWorker.port.postMessage({ text })
-        // mecabWorker.onerror = (e) => {
-        //     console.error(e)
-        // }
-        // mecabWorker.port.onmessageerror = (e) => {
-        //     console.error(e)
-        // }
         chrome.runtime.sendMessage({ text }, (response) => {
             const tokenize_other = jhHoverSettings.ow_hover != 'never'
             let ibegin = 0 //beginning of word
@@ -195,11 +180,12 @@ function text_to_hl_nodes(text, new_children) {
                 }
                 last_hl_end_pos = match.end
                 //span = document.createElement("span");
-                const span = document.createElement('wdautohlja-customtag')
+                // const span = document.createElement('wdautohlja-customtag')
+                const span = document.createElement('span')
                 span.textContent = text.slice(match.begin, last_hl_end_pos)
                 span.setAttribute('style', text_style)
-                span.id = 'wdautohlja_id' + cur_wd_node_id
-                cur_wd_node_id += 1
+                // span.id = 'wdautohlja_id' + cur_wd_node_id
+                // cur_wd_node_id += 1
                 const wdclassname = classNamePrefix + className
                 span.setAttribute('class', wdclassname)
                 new_children.push(span)
@@ -234,6 +220,10 @@ async function doHighlightText(textNodes) {
     }
 
     for (const textNode of textNodes) {
+        const parent_node = textNode.parentNode
+        if (!parent_node) {
+            continue
+        }
         if (textNodes.offsetParent === null) {
             continue
         }
@@ -256,7 +246,6 @@ async function doHighlightText(textNodes) {
         // console.timeEnd('textToNodes')
         if (insert_count) {
             // num_found += found_count;
-            const parent_node = textNode.parentNode
             assert(new_children.length > 0, 'children must be non empty')
             for (var j = 0; j < new_children.length; j++) {
                 parent_node.insertBefore(new_children[j], textNode)
