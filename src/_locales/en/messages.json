@@ -4,7 +4,7 @@
     "description": "The title of the application, displayed in the web store. Note to the translator: Do not translate first two words 'Words Discoverer'"
   },
   "appDesc": {
-    "message": "Highlights rare Japanese dictionary words on web pages. Facilitates Japanese language learning and expands your vocabulary.",
+    "message": "Highlights rare Japanese words with the help of BCCWJ frequency list list on web pages. Facilitates Japanese language learning.",
     "description": "The description of the application, displayed in the web store."
   },
   "menuItem": {

@@ -4,7 +4,7 @@
     "description": "The title of the application, displayed in the web store."
   },
   "appDesc": {
-    "message": "突出显示网页上罕见的日语字典词汇和惯用语。促进日语语言学习并扩大词汇量。",
+    "message": "根据国立国語研究所的BCCWJ词频表高亮网页上罕见的日语词汇，促进日语语言学习。",
     "description": "The description of the application, displayed in the web store."
   },
   "menuItem": {

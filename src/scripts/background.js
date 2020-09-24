@@ -229,6 +229,7 @@ function syncVocabulary(dirId, vocab) {
     const newAdded = {};
     addToSet(newAdded, vocab.all);
     addToSet(newAdded, vocab.added);
+    // eslint-disable-next-line no-param-reassign
     vocab.added = newAdded;
   };
   findGdriveId(fileQuery, mergeVocabToCloud, createNewFileWrap);
@@ -299,14 +300,42 @@ function syncUserVocabularies() {
 }
 
 function authorizeUser(interactiveAuthorization) {
-  browser.identity.getAuthToken({ interactive: interactiveAuthorization }, (token) => {
-    if (token === undefined) {
-      reportSyncFailure('Unable to get oauth token');
-    } else {
-      gapi.client.setToken({ access_token: token });
-      syncUserVocabularies();
-    }
-  });
+  const isChrome = !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime);
+  const isEdgeChromium = isChrome && navigator.userAgent.indexOf('Edg') !== -1;
+
+  if (isChrome && !isEdgeChromium) {
+    browser.identity.getAuthToken({ interactive: interactiveAuthorization }, (token) => {
+      if (token === undefined) {
+        reportSyncFailure('Unable to get oauth token');
+      } else {
+        gapi.client.setToken({ access_token: token });
+        syncUserVocabularies();
+      }
+    });
+  } else {
+    const redirectURL = browser.identity.getRedirectURL();
+    const clientID = '516018828037-dqd8ammqpvs4pp5vimeqk1nin02ebpfc.apps.googleusercontent.com';
+    const scopes = ['https://www.googleapis.com/auth/drive.file'];
+    let authURL = 'https://accounts.google.com/o/oauth2/auth';
+    authURL += `?client_id=${clientID}`;
+    authURL += `&response_type=token`;
+    authURL += `&redirect_uri=${encodeURIComponent(redirectURL)}`;
+    authURL += `&scope=${encodeURIComponent(scopes.join(' '))}`;
+
+    browser.identity
+      .launchWebAuthFlow({
+        interactive: true,
+        url: authURL,
+      })
+      .then((token) => {
+        if (token === undefined) {
+          reportSyncFailure('Unable to get oauth token');
+        } else {
+          gapi.client.setToken({ access_token: token });
+          syncUserVocabularies();
+        }
+      });
+  }
 }
 
 function initGapi(interactiveAuthorization) {
@@ -355,28 +384,21 @@ function initializeExtension() {
     const mecabDo = mecab.cwrap('mecab_do2', 'number', ['string']);
     const spaceRegex = /[\s\n]/g;
 
-    browser.runtime.onMessage.addListener((request) => {
-      if (!request.text) return Promise.resolve();
+    browser.runtime.onMessage.addListener(async (request) => {
+      if (!request.text) return null;
       const processedText = request.text.replace(spaceRegex, '、');
       mecab.FS.writeFile('input.txt', processedText);
       mecabDo(args);
       const output = mecab.FS.readFile('output.txt', {
         encoding: 'utf8',
       });
-      return Promise.resolve(output);
-      // sendResponse({ output })
+      return output;
     });
   });
 
   browser.runtime.onMessage.addListener((request, sender) => {
-    // if (request.wdm_request == "hostname") {
-    // const tab_url = sender.tab.url;
-    // var url = new URL(tab_url);
-    // var domain = url.hostname;
-    // sendResponse({ wdm_hostname: domain });
-    // } else
-    if (request.wdm_verdict) {
-      if (request.wdm_verdict === 'highlight') {
+    if (request.wdmVerdict) {
+      if (request.wdmVerdict === 'highlight') {
         let result;
         browser.storage.local
           .get(['wdGdSyncEnabled', 'wdLastSyncError'])
@@ -410,23 +432,26 @@ function initializeExtension() {
               }
             }
           });
-      } else if (request.wdm_verdict === 'keyboard') {
-        browser.browserAction.setIcon({
-          path: '../images/no_dynamic.png',
-          tabId: sender.tab.id,
-        });
+        // } else if (request.wdmVerdict === 'keyboard') {
+        //   browser.browserAction.setIcon({
+        //     path: '../images/no_dynamic.png',
+        //     tabId: sender.tab.id,
+        //   });
       } else {
         browser.browserAction.setIcon({
           path: '../images/result48_gray.png',
           tabId: sender.tab.id,
         });
       }
-    } else if (request.wdm_new_tab_url) {
-      const fullUrl = request.wdm_new_tab_url;
-      console.log(fullUrl);
+    } else if (request.wdmNewTabUrl) {
+      const fullUrl = request.wdmNewTabUrl;
       browser.tabs.create({ url: fullUrl });
-    } else if (request.wdm_request === 'gd_sync') {
-      startSyncSequence(request.interactive_mode);
+    } else if (request.wdmRequest === 'gd_sync') {
+      startSyncSequence(request.interactiveMode);
+    } else if (request.type === 'tts_speak') {
+      if (request.word && typeof request.word === 'string') {
+        browser.tts.speak(request.word, { lang: 'ja' });
+      }
     }
   });
 
@@ -513,15 +538,6 @@ function initializeExtension() {
         browser.storage.local.set({ wdWhiteList: {} });
       }
     });
-
-  browser.runtime.onMessage.addListener((request) => {
-    if (request.type === 'tts_speak') {
-      console.log(request);
-      if (request.word && typeof request.word === 'string') {
-        browser.tts.speak(request.word, { lang: 'ja' });
-      }
-    }
-  });
 }
 
 initializeExtension();

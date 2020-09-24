@@ -138,7 +138,7 @@ async function textToHlNodes(text, newChildren) {
     if (match.kind === 'lemma') {
       const hlParams = wdHlSettings.wordParams;
       textStyle = makeHlStyle(hlParams);
-      className = `${match.normalized}-${match.rank}:${match.frequency}`;
+      className = `${match.normalized}_${match.rank}:${match.frequency}`;
     } else if (match.kind === 'word') {
       textStyle = 'font:inherit;display:inline;color:inherit;background-color:inherit;';
       className = match.normalized;
@@ -168,11 +168,8 @@ function doHighlightText(textNodes) {
   if (textNodes === null || textNodes.length === 0 || JaDict === null || wdMinimunRank === null) {
     return;
   }
-  // if (disableByKeypress) {
-  //   return;
-  // }
+  // disableByKeypress
 
-  // for (const textNode of textNodes) {
   textNodes.forEach((textNode) => {
     const { parentNode } = textNode;
     if (!parentNode) {
@@ -194,12 +191,7 @@ function doHighlightText(textNodes) {
     }
     const newChildren = [];
 
-    // console.time('textToNodes')
-    // const insert_count = await
-    // pQueue
-    // .add(() =>
     textToHlNodes(text, newChildren).then((insertCount) => {
-      // console.timeEnd('textToNodes')
       if (insertCount) {
         // num_found += found_count;
         assert(newChildren.length > 0, 'children must be non empty');
@@ -256,7 +248,6 @@ function unhighlight(lemma) {
 }
 
 function bubbleHandleTts(lexeme) {
-  console.log(lexeme);
   browser.runtime.sendMessage({ type: 'tts_speak', word: lexeme });
 }
 
@@ -277,8 +268,7 @@ function hideBubble(force) {
 function searchDict(e) {
   const dictUrl = e.target.getAttribute('wdDictRefUrl');
   const newTabUrl = getDictDefinitionUrl(dictUrl, currentLexeme);
-  console.log(newTabUrl);
-  browser.runtime.sendMessage({ wdm_new_tab_url: newTabUrl });
+  browser.runtime.sendMessage({ wdmNewTabUrl: newTabUrl });
 }
 
 function createBubble() {
@@ -352,15 +342,13 @@ function renderBubble() {
     return;
   }
 
-  const wdSpanText = nodeToRender.textContent;
   const bubbleDOM = document.getElementById('wd-selection-bubble-ja');
   const bubbleText = document.getElementById('wd-selection-bubble-text-ja');
   const bubbleFreq = document.getElementById('wd-selection-bubble-freq-ja');
-  bubbleText.textContent = limitTextLen(wdSpanText);
-  [, bubbleFreq.textContent] = classattr.split('-');
-  const rank = classattr.substring(classattr.lastIndexOf('-') + 1, classattr.lastIndexOf(':'));
+  [, currentLexeme, bubbleFreq.textContent] = classattr.split('_');
+  bubbleText.textContent = limitTextLen(currentLexeme);
+  const [rank] = bubbleFreq.textContent.split(':');
   bubbleFreq.style.backgroundColor = getHeatColorPoint((rank / wordMaxRank) * 100);
-  currentLexeme = classattr.substring(classattr.lastIndexOf('_') + 1, classattr.lastIndexOf('-'));
   const bcr = nodeToRender.getBoundingClientRect();
   bubbleDOM.style.top = `${bcr.bottom}px`;
   bubbleDOM.style.left = `${Math.max(5, Math.floor((bcr.left + bcr.right) / 2) - 100)}px`;
@@ -368,7 +356,7 @@ function renderBubble() {
   renderedNodeId = nodeToRenderId;
 
   if (wdEnableTTS) {
-    browser.runtime.sendMessage({ type: 'tts_speak', word: wdSpanText });
+    browser.runtime.sendMessage({ type: 'tts_speak', word: currentLexeme });
   }
 }
 
@@ -437,14 +425,13 @@ function initForPage() {
       // window.location document.URL document.location.href
       const verdict = getVerdict(wdIsEnabled, wdBlackList, wdWhiteList, hostname);
       // to change icon
-      browser.runtime.sendMessage({ wdm_verdict: verdict });
+      browser.runtime.sendMessage({ wdmVerdict: verdict });
       if (verdict !== 'highlight') return;
 
       const bccwj = browser.runtime.getURL('../data/mybccwj.csv');
       readFile(bccwj).then((text) => {
         JaDict = processData(text);
         wordMaxRank = JaDict.length - 1;
-
         textNodesUnder(document.body);
         document.addEventListener('DOMNodeInserted', onNodeInserted, false);
       });
@@ -460,8 +447,8 @@ function initForPage() {
       // const show_percents = result.wd_show_percents;
 
       browser.runtime.onMessage.addListener((request) => {
-        if (request.wdm_unhighlight) {
-          const lemma = request.wdm_unhighlight;
+        if (request.wdmUnhighlight) {
+          const lemma = request.wdmUnhighlight;
           unhighlight(lemma);
         }
       });
@@ -478,7 +465,7 @@ function initForPage() {
         //   // this logic can also be helpful in other situations,
         //   // it's better play safe and stop highlighting when user enters data.
         //   disable_by_keypress = true;
-        //   chrome.runtime.sendMessage({ wdm_verdict: 'keyboard' });
+        //   chrome.runtime.sendMessage({ wdmVerdict: 'keyboard' });
         // }
       });
 

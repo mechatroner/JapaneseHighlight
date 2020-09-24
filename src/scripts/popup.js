@@ -134,7 +134,7 @@ function processAddWord() {
 
 function processRate(increase) {
   browser.storage.local.get(['wdMinimunRank']).then((result) => {
-    const minimunRank = result.wdMinimunRank + increase;
+    const minimunRank = result.wdMinimunRank + increase > 0 ? result.wdMinimunRank + increase : 0;
     // minimunRank += increase;
     // minimunRank = Math.min(100, Math.max(0, show_percents));
     // display_percents(minimunRank);

@@ -2,7 +2,7 @@ import browser from 'webextension-polyfill';
 
 export function requestUnhighlight(lemma) {
   browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
-    browser.tabs.sendMessage(tabs[0].id, { wdm_unhighlight: lemma });
+    browser.tabs.sendMessage(tabs[0].id, { wdmUnhighlight: lemma });
   });
 }
 
@@ -24,8 +24,8 @@ export function syncIfNeeded() {
     const syncPeriodMins = 30;
     if (minsPassed >= syncPeriodMins) {
       browser.runtime.sendMessage({
-        wdm_request: 'gd_sync',
-        interactive_mode: false,
+        wdmRequest: 'gd_sync',
+        interactiveMode: false,
       });
     }
   });

@@ -4,7 +4,7 @@
     "description": "The title of the application, displayed in the web store."
   },
   "appDesc": {
-    "message": "Webページ上のまれな日語の辞書の単語や熟語をハイライトします。日語学習を容易にし、あなたの語彙を増強します。",
+    "message": "Webページ上のまれな日語の辞書の単語をハイライトします。日語学習を容易にし、あなたの語彙を増強します。",
     "description": "The description of the application, displayed in the web store."
   },
   "menuItem": {

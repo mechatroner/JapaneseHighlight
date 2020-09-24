@@ -61,7 +61,7 @@ function synchronizeNow() {
   document.getElementById('sync-status-feedback').style.display = 'inline';
   document.getElementById('sync-status-feedback').textContent = 'Synchronization started...';
   browser.storage.local.set({ wdGdSyncEnabled: true }).then(() => {
-    browser.runtime.sendMessage({ wdm_request: 'gd_sync', interactive_mode: true });
+    browser.runtime.sendMessage({ wdmRequest: 'gd_sync', interactiveMode: true });
   });
 }
 
